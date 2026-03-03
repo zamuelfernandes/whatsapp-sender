@@ -14,11 +14,21 @@ function warmupDelay() {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-// Escolhe aleatoriamente uma das variações de mensagem
+// Processa o template de Spintax e insere o nome do contato
 function pickVariant(variants, name) {
-  const valid = variants.filter((v) => v && v.trim());
-  const chosen = valid[Math.floor(Math.random() * valid.length)];
-  return chosen.replace(/\{name\}/gi, name.trim());
+  if (!variants || !variants.length) return "";
+  let text = variants[0];
+
+  // Resolve o Spintax ({opção1|opção2})
+  text = text.replace(/\{([^{}]+)\}/g, (match, content) => {
+    // Se for {name}, não é spintax, ignoramos para substituir depois
+    if (content === "name") return match;
+    const parts = content.split("|");
+    return parts[Math.floor(Math.random() * parts.length)];
+  });
+
+  // Substitui a tag {name} pelo nome real do contato
+  return text.replace(/\{name\}/gi, name.trim());
 }
 
 module.exports = {

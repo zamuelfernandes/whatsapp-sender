@@ -36,11 +36,10 @@ const btnStop = document.getElementById("btn-stop");
 const progressSec = document.getElementById("progress-section");
 const logBody = document.getElementById("log-body");
 
-// Pega todas as variações preenchidas
+// Pega as variações via Spintax
 function getVariants() {
-  return [...document.querySelectorAll(".variant-input")]
-    .map((t) => t.value.trim())
-    .filter(Boolean);
+  const text = document.getElementById("message-input").value;
+  return text ? [text] : [];
 }
 
 // ─── Status polling ───────────────────────────────────────────────────────────
@@ -131,21 +130,34 @@ function waMarkdown(text) {
     .replace(/\n/g, "<br>");
 }
 
+// Função para simular o spintax no preview
+function resolveSpintax(text) {
+  return text.replace(/\{([^{}]+)\}/g, (match, content) => {
+    // Se for {name}, não é spintax, ignoramos para substituir depois
+    if (content === "name") return match;
+    const parts = content.split("|");
+    return parts[Math.floor(Math.random() * parts.length)];
+  });
+}
+
 function updatePreview() {
   const variants = getVariants();
   if (!contacts.length || !variants.length) {
     previewBox.style.display = "none";
     return;
   }
-  const preview = variants[0].replace(/\{name\}/gi, contacts[0].name);
+
+  // Resolve o spintax antes de aplicar os nomes
+  let preview = resolveSpintax(variants[0]);
+  preview = preview.replace(/\{name\}/gi, contacts[0].name);
+
   previewBox.style.display = "block";
   previewBox.innerHTML = waMarkdown(preview);
 }
 
 // Botões de formatação — envolve o texto selecionado ou insere marcação
 window.fmt = function fmt(index, type) {
-  const textareas = document.querySelectorAll(".variant-input");
-  const ta = textareas[index];
+  const ta = document.getElementById("message-input");
   const start = ta.selectionStart;
   const end = ta.selectionEnd;
   const sel = ta.value.substring(start, end);
@@ -155,6 +167,8 @@ window.fmt = function fmt(index, type) {
   let insert;
   if (type === "name") {
     insert = "{name}";
+  } else if (type === "spin") {
+    insert = sel ? `{${sel}|opção2}` : `{opção1|opção2}`;
   } else {
     const char = wrapMap[type];
     insert = sel ? `${char}${sel}${char}` : `${char}texto${char}`;
@@ -173,7 +187,7 @@ function updateSendBtn() {
   btnSend.disabled = !(
     waStatus === "ready" &&
     contacts.length &&
-    variants.length === 3
+    variants.length >= 1
   );
 }
 

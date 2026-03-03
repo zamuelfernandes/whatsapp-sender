@@ -43,25 +43,33 @@
 
       <!-- MENSAGEM -->
       <div class="card">
-        <h2>✍️ Variações de Mensagem</h2>
-        <p class="hint" style="margin-bottom: 16px">
-          Escreva até 3 versões da mensagem. A cada envio, uma variação é
-          escolhida aleatoriamente — isso reduz detecção de spam. Use
-          <strong>{name}</strong> em todas.
-        </p>
+        <h2>✍️ Mensagem com Spintax</h2>
+        <div
+          class="hint"
+          style="
+            margin-bottom: 16px;
+            background: #e6f6ff;
+            border-left: 4px solid #3182ce;
+            padding: 12px;
+            color: #2a4365;
+          "
+        >
+          <strong>O que é Spintax?</strong><br />
+          É uma técnica antiban que cria variações da sua mensagem a cada envio.
+          Use chaves <code>{}</code> e separe opções com a barra
+          <code>|</code>.<br /><br />
+          <em>Exemplo:</em>
+          <code
+            >{Olá|Oi|Saudações} {name}! Como {você está?|vão as coisas?}</code
+          ><br />
+          O sistema vai sortear uma das opções em cada chave para cada contato.
+        </div>
 
         <div
           id="variants-wrap"
           style="display: flex; flex-direction: column; gap: 14px"
         >
-          <div class="hint" style="margin-bottom: 4px">
-            <strong>Formatação disponível:</strong>
-            <code>*negrito*</code> &nbsp; <code>_itálico_</code> &nbsp;
-            <code>~riscado~</code> &nbsp; Emojis são suportados 🎉
-          </div>
-
           <div class="variant-block">
-            <label>Variação 1 <span style="color: #e53e3e">*</span></label>
             <div class="format-bar">
               <button class="fmt-btn" onclick="fmt(0, 'bold')" type="button">
                 <b>N</b>
@@ -75,65 +83,31 @@
               <button class="fmt-btn" onclick="fmt(0, 'name')" type="button">
                 {name}
               </button>
-            </div>
-            <textarea
-              class="variant-input"
-              placeholder="Olá *{name}*, informamos que..."
-            ></textarea>
-          </div>
-
-          <div class="variant-block">
-            <label>Variação 2 <span style="color: #e53e3e">*</span></label>
-            <div class="format-bar">
-              <button class="fmt-btn" onclick="fmt(1, 'bold')" type="button">
-                <b>N</b>
-              </button>
-              <button class="fmt-btn" onclick="fmt(1, 'italic')" type="button">
-                <i>I</i>
-              </button>
-              <button class="fmt-btn" onclick="fmt(1, 'strike')" type="button">
-                <s>S</s>
-              </button>
-              <button class="fmt-btn" onclick="fmt(1, 'name')" type="button">
-                {name}
+              <button
+                class="fmt-btn"
+                onclick="fmt(0, 'spin')"
+                type="button"
+                title="Inserir Spintax"
+              >
+                {a|b}
               </button>
             </div>
             <textarea
+              id="message-input"
               class="variant-input"
-              placeholder="Oi *{name}*, gostaríamos de avisar que..."
-            ></textarea>
-          </div>
-
-          <div class="variant-block">
-            <label>Variação 3 <span style="color: #e53e3e">*</span></label>
-            <div class="format-bar">
-              <button class="fmt-btn" onclick="fmt(2, 'bold')" type="button">
-                <b>N</b>
-              </button>
-              <button class="fmt-btn" onclick="fmt(2, 'italic')" type="button">
-                <i>I</i>
-              </button>
-              <button class="fmt-btn" onclick="fmt(2, 'strike')" type="button">
-                <s>S</s>
-              </button>
-              <button class="fmt-btn" onclick="fmt(2, 'name')" type="button">
-                {name}
-              </button>
-            </div>
-            <textarea
-              class="variant-input"
-              placeholder="Prezado(a) *{name}*, comunicamos que..."
+              placeholder="{Olá|Oi|Bom dia}, *{name}*! Tudo {bem|certo} com você?"
+              rows="6"
             ></textarea>
           </div>
         </div>
 
         <div style="margin-top: 16px">
           <label
-            >Pré-visualização
+            >Pré-visualização Aleatória
             <span style="color: #a0aec0; font-weight: 400; font-size: 0.8rem"
               >(renderiza como WhatsApp)</span
-            ></label
-          >
+            >
+          </label>
           <div id="preview-box"></div>
         </div>
       </div>
