@@ -28,6 +28,12 @@ A única solução 100% livre de riscos de banimento para grandes volumes.
 - **Conceito:** Utilizar a API oficial da Meta (através de provedores como Zenvia, Twilio, ou integração direta com a Cloud API).
 - **Como funciona:** Exige a aprovação de _Templates_ de mensagens pré-cadastrados. A Meta cobra um valor (frações de centavos) por cada conversa iniciada pela empresa.
 - **Vantagem:** Sem risco de banimento de número, desde que as políticas da Meta sejam respeitadas (comunicação legítima com usuários que optaram por receber mensagens - _opt-in_). Relatórios precisos de entrega e leitura.
+- **Custos Aproximados (Referência: 2024/2025 no Brasil):**
+  - **Conversas de Marketing** (Avisos gerais, promoções, convites): ~**US$ 0,0625** por conversa (aprox. **R$ 0,31**).
+  - **Conversas de Utilidade** (Atualizações sobre finanças/pedidos, pós-venda): ~**US$ 0,0350** por conversa (aprox. **R$ 0,17**).
+  - **Simulação para o seu Cenário (2.500 mensagens de Marketing):**
+    - 2.500 x US$ 0,0625 = **US$ 156,25**
+    - Convertendo (Dólar a R$ 5,00): **R$ 781,25** no total pelo disparo completo.
 
 ### 3. A Abordagem Kamikaze: Usando 1 Único Número
 
