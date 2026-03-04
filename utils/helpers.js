@@ -27,8 +27,9 @@ function pickVariant(variants, name) {
     return parts[Math.floor(Math.random() * parts.length)];
   });
 
-  // Substitui a tag {name} pelo nome real do contato
-  return text.replace(/\{name\}/gi, name.trim());
+  // Substitui a tag {name} pelo primeiro nome do contato
+  const firstName = name.trim().split(" ")[0];
+  return text.replace(/\{name\}/gi, firstName);
 }
 
 module.exports = {
