@@ -1,4 +1,9 @@
 node_modules
 .env
+.env.sms
 .wwebjs_auth
 .wwebjs_cache
+logs
+listas/
+tmp_sms.sh
+tmp_sms.txt
