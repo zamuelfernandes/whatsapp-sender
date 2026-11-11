@@ -2,19 +2,7 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-function randomDelay() {
-  const min = parseFloat(process.env.DELAY_MIN || 10) * 1000;
-  const max = parseFloat(process.env.DELAY_MAX || 30) * 1000;
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function warmupDelay() {
-  const min = parseFloat(process.env.WARMUP_DELAY_MIN || 20) * 1000;
-  const max = parseFloat(process.env.WARMUP_DELAY_MAX || 40) * 1000;
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-// Processa o template de Spintax e insere o nome do contato
+// Processa o template de Spintax e insere o nome do contato (opcional)
 function pickVariant(variants, name) {
   if (!variants || !variants.length) return "";
   let text = variants[0];
@@ -22,19 +10,30 @@ function pickVariant(variants, name) {
   // Resolve o Spintax ({opção1|opção2})
   text = text.replace(/\{([^{}]+)\}/g, (match, content) => {
     // Se for {name}, não é spintax, ignoramos para substituir depois
-    if (content === "name") return match;
+    if (content.toLowerCase() === "name") return match;
     const parts = content.split("|");
     return parts[Math.floor(Math.random() * parts.length)];
   });
 
-  // Substitui a tag {name} pelo primeiro nome do contato
-  const firstName = name.trim().split(" ")[0];
-  return text.replace(/\{name\}/gi, firstName);
+  if (!/\{name\}/i.test(text)) {
+    return text;
+  }
+
+  // Substitui a tag {name} pelo primeiro nome do contato, se existir
+  const firstName = (name || "").trim().split(/\s+/)[0] || "";
+  if (firstName) {
+    return text.replace(/\{name\}/gi, firstName);
+  }
+
+  return text
+    .replace(/^[ \t]*(?:\*\{name\}\*|_\{name\}_|~\{name\}~|\{name\})(?:,[ \t]*|[ \t]*)/gim, "")
+    .replace(/[ \t]*(?:\*\{name\}\*|_\{name\}_|~\{name\}~|\{name\})/gi, "")
+    .replace(/,[ \t]*,/g, ",")
+    .replace(/,[ \t]*([!?.])/g, "$1")
+    .replace(/^[ \t]*,[ \t]*/gm, "");
 }
 
 module.exports = {
   sleep,
-  randomDelay,
-  warmupDelay,
   pickVariant,
 };
