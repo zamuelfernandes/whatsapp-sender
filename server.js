@@ -1,4 +1,6 @@
 require("dotenv").config();
+// Carrega as variáveis adicionais do arquivo .env.sms, se existir
+require("dotenv").config({ path: ".env.sms" });
 
 const express = require("express");
 const path = require("path");
@@ -39,10 +41,13 @@ app.post("/api/send", (req, res) => {
     return res.status(400).json({ error: "Envio já em andamento." });
 
   const { contacts, variants } = req.body;
-  if (!contacts?.length || !variants?.length)
+  const validContacts = Array.isArray(contacts)
+    ? contacts.filter((c) => c && String(c.number || "").replace(/\D/g, "").length >= 10)
+    : [];
+  if (!validContacts.length || !Array.isArray(variants) || !variants[0])
     return res.status(400).json({ error: "Dados inválidos." });
 
-  senderService.startJob(contacts, variants);
+  senderService.startJob(validContacts, variants);
   res.json({ ok: true });
 });
 
@@ -55,9 +60,62 @@ app.post("/api/stop", (req, res) => {
   res.json({ ok: true });
 });
 
-// Reconecta automaticamente se já houver sessão salva
-whatsappService.initClient();
+const smsSenderService = require("./services/smsSenderService");
+const adbService = require("./services/adbService");
 
-app.listen(3000, () => {
-  console.log("🚀 Acesse: http://localhost:3000");
+// ─── API: SMS ─────────────────────────────────────────────────────────────────
+app.get("/api/sms/status", async (req, res) => {
+  const isConnected = await adbService.checkConnection();
+  res.json({ connected: isConnected });
 });
+
+app.post("/api/sms/send", async (req, res) => {
+  const isConnected = await adbService.checkConnection();
+  if (!isConnected)
+    return res
+      .status(400)
+      .json({ error: "Dispositivo Android não conectado via ADB." });
+
+  if (smsSenderService.isJobRunning())
+    return res.status(400).json({ error: "Envio de SMS já em andamento." });
+
+  const { contacts, variants } = req.body;
+  const validContacts = Array.isArray(contacts)
+    ? contacts.filter((c) => c && String(c.number || "").replace(/\D/g, "").length >= 10)
+    : [];
+  if (!validContacts.length || !Array.isArray(variants) || !variants[0])
+    return res.status(400).json({ error: "Dados inválidos." });
+
+  smsSenderService.startJob(validContacts, variants);
+  res.json({ ok: true });
+});
+
+app.get("/api/sms/progress", (req, res) => {
+  res.json(smsSenderService.getProgress());
+});
+
+app.post("/api/sms/stop", (req, res) => {
+  smsSenderService.stopJob();
+  res.json({ ok: true });
+});
+
+const BASE_PORT = parseInt(process.env.PORT || "3000", 10) || 3000;
+
+function startServer(port) {
+  const server = app.listen(port, () => {
+    console.log(`🚀 Acesse: http://localhost:${port}`);
+    // Reconecta automaticamente se já houver sessão salva
+    whatsappService.initClient();
+  });
+
+  server.on("error", (err) => {
+    if (err.code === "EADDRINUSE" && port < BASE_PORT + 20) {
+      console.warn(`⚠️ Porta ${port} em uso, tentando porta ${port + 1}...`);
+      startServer(port + 1);
+    } else {
+      throw err;
+    }
+  });
+}
+
+startServer(BASE_PORT);
