@@ -1,26 +1,78 @@
-// ─── CSV parsing (sem dependência) ────────────────────────────────────────────
+// ─── CSV / TXT parsing (sem dependência) ──────────────────────────────────────
+function cleanPhoneNumber(raw) {
+  let digits = String(raw || "").replace(/\D/g, "");
+  if (!digits) return "";
+  if (digits.startsWith("0") && digits.length > 10) {
+    digits = digits.replace(/^0+/, "");
+  }
+  if (digits.length >= 10 && digits.length <= 11 && !digits.startsWith("55")) {
+    digits = "55" + digits;
+  }
+  return digits;
+}
+
 function parseCSV(text) {
-  const lines = text.trim().split(/\r?\n/);
-  const headers = lines[0]
-    .split(",")
+  const lines = text
+    .trim()
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+  if (!lines.length) throw new Error("Arquivo vazio.");
+
+  const firstLine = lines[0];
+  const delimiter = firstLine.includes(";") ? ";" : ",";
+  const headers = firstLine
+    .split(delimiter)
     .map((h) => h.trim().toLowerCase().replace(/"/g, ""));
-  const nameIdx = headers.indexOf("name");
-  const numberIdx = headers.indexOf("number");
-  if (nameIdx === -1 || numberIdx === -1)
-    throw new Error('CSV precisa ter colunas "name" e "number"');
-  return lines
-    .slice(1)
-    .map((line) => {
-      const cols = line.split(",").map((c) => c.trim().replace(/"/g, ""));
-      return { name: cols[nameIdx] || "", number: cols[numberIdx] || "" };
-    })
-    .filter((c) => c.name && c.number);
+
+  const nameIdx = headers.findIndex((h) =>
+    ["name", "nome", "contato"].includes(h),
+  );
+  const numberIdx = headers.findIndex((h) =>
+    ["number", "numero", "número", "telefone", "celular", "whatsapp", "phone"].includes(h),
+  );
+
+  let parsed = [];
+  if (numberIdx !== -1) {
+    parsed = lines
+      .slice(1)
+      .map((line) => {
+        const cols = line.split(delimiter).map((c) => c.trim().replace(/"/g, ""));
+        return {
+          name: nameIdx !== -1 ? cols[nameIdx] || "" : "",
+          number: cleanPhoneNumber(cols[numberIdx]),
+        };
+      })
+      .filter((c) => c.number.length >= 10);
+  } else if (!/[a-zA-Z]/.test(firstLine) && cleanPhoneNumber(firstLine).length >= 10) {
+    // Lista simples sem cabeçalho (1 número por linha, ex: .txt)
+    parsed = lines
+      .map((line) => ({
+        name: "",
+        number: cleanPhoneNumber(line),
+      }))
+      .filter((c) => c.number.length >= 10);
+  } else {
+    throw new Error(
+      'Arquivo precisa ter coluna "number" (ou "telefone") ou ser uma lista com 1 número por linha.',
+    );
+  }
+
+  // Remove números duplicados mantendo a primeira ocorrência
+  const seen = new Set();
+  return parsed.filter((c) => {
+    if (seen.has(c.number)) return false;
+    seen.add(c.number);
+    return true;
+  });
 }
 
 // ─── State ────────────────────────────────────────────────────────────────────
 let contacts = [];
 let waStatus = "disconnected";
+let smsStatus = "disconnected";
 let polling = null;
+let currentMode = "whatsapp"; // whatsapp ou sms
 
 // ─── Elements ─────────────────────────────────────────────────────────────────
 const statusBar = document.getElementById("status-bar");
@@ -35,6 +87,7 @@ const btnSend = document.getElementById("btn-send");
 const btnStop = document.getElementById("btn-stop");
 const progressSec = document.getElementById("progress-section");
 const logBody = document.getElementById("log-body");
+const connectionTitle = document.getElementById("connection-title");
 
 // Pega as variações via Spintax
 function getVariants() {
@@ -42,15 +95,55 @@ function getVariants() {
   return text ? [text] : [];
 }
 
+// ─── Aba Switching ─────────────────────────────────────────────────────────────
+window.switchMode = function (mode) {
+  currentMode = mode;
+  document
+    .getElementById("tab-whatsapp")
+    .classList.toggle("active", mode === "whatsapp");
+  document.getElementById("tab-sms").classList.toggle("active", mode === "sms");
+
+  if (mode === "whatsapp") {
+    connectionTitle.textContent = "📱 Conexão WhatsApp";
+    document.getElementById("connection-actions").style.display = "flex";
+    fetchStatus();
+  } else {
+    connectionTitle.textContent = "👾 Conexão Android USB (ADB)";
+    qrContainer.style.display = "none";
+    document.getElementById("connection-actions").style.display = "none"; // ADB não tem botão conectar
+    fetchSmsStatus();
+  }
+  updateSendBtn();
+};
+
 // ─── Status polling ───────────────────────────────────────────────────────────
 async function fetchStatus() {
+  if (currentMode !== "whatsapp") return;
   try {
     const r = await fetch("/api/status").then((r) => r.json());
     setStatus(r.status, r.qr);
   } catch {}
 }
 
+async function fetchSmsStatus() {
+  if (currentMode !== "sms") return;
+  try {
+    const r = await fetch("/api/sms/status").then((r) => r.json());
+    smsStatus = r.connected ? "ready" : "disconnected";
+
+    if (r.connected) {
+      statusBar.className = "status-ready";
+      statusBar.textContent = "🟢 Celular pareado no ADB (USB)";
+    } else {
+      statusBar.className = "status-disconnected";
+      statusBar.textContent = "🔴 Celular Inacessível. Depuração USB ativa?";
+    }
+    updateSendBtn();
+  } catch {}
+}
+
 function setStatus(s, qr) {
+  if (currentMode !== "whatsapp") return;
   waStatus = s;
   statusBar.className = "status-" + s;
   if (s === "disconnected") {
@@ -82,14 +175,13 @@ function setStatus(s, qr) {
 
 // ─── Connect / Disconnect ─────────────────────────────────────────────────────
 btnConnect.addEventListener("click", async () => {
+  if (currentMode !== "whatsapp") return;
   await fetch("/api/connect", { method: "POST" });
-  if (!polling) polling = setInterval(fetchStatus, 2000);
 });
 
 btnDisconnect.addEventListener("click", async () => {
+  if (currentMode !== "whatsapp") return;
   await fetch("/api/disconnect", { method: "POST" });
-  clearInterval(polling);
-  polling = null;
   setStatus("disconnected");
 });
 
@@ -101,14 +193,21 @@ csvFile.addEventListener("change", () => {
   reader.onload = (e) => {
     try {
       contacts = parseCSV(e.target.result);
+      if (!contacts.length) {
+        throw new Error("Nenhum número válido encontrado no arquivo.");
+      }
       csvInfo.style.display = "block";
-      csvInfo.innerHTML = `✅ <strong>${contacts.length}</strong> contatos carregados. Primeiro: ${contacts[0].name} — ${contacts[0].number}`;
+      const firstLabel = contacts[0].name
+        ? `${contacts[0].name} — ${contacts[0].number}`
+        : contacts[0].number;
+      csvInfo.innerHTML = `✅ <strong>${contacts.length}</strong> contatos carregados. Primeiro: ${escapeHtml(firstLabel)}`;
       updatePreview();
       updateSendBtn();
     } catch (err) {
       csvInfo.style.display = "block";
       csvInfo.textContent = "❌ Erro: " + err.message;
       contacts = [];
+      updatePreview();
       updateSendBtn();
     }
   };
@@ -121,9 +220,17 @@ document.querySelectorAll(".variant-input").forEach((t) => {
   t.addEventListener("input", updateSendBtn);
 });
 
-// Converte markdown do WhatsApp em HTML para preview
+function escapeHtml(str) {
+  return String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+// Converte markdown do WhatsApp em HTML seguro para preview
 function waMarkdown(text) {
-  return text
+  return escapeHtml(text)
     .replace(/\*(.*?)\*/g, "<strong>$1</strong>")
     .replace(/_(.*?)_/g, "<em>$1</em>")
     .replace(/~(.*?)~/g, "<s>$1</s>")
@@ -133,8 +240,7 @@ function waMarkdown(text) {
 // Função para simular o spintax no preview
 function resolveSpintax(text) {
   return text.replace(/\{([^{}]+)\}/g, (match, content) => {
-    // Se for {name}, não é spintax, ignoramos para substituir depois
-    if (content === "name") return match;
+    if (content.toLowerCase() === "name") return match;
     const parts = content.split("|");
     return parts[Math.floor(Math.random() * parts.length)];
   });
@@ -147,15 +253,29 @@ function updatePreview() {
     return;
   }
 
-  // Resolve o spintax antes de aplicar os nomes
   let preview = resolveSpintax(variants[0]);
-  preview = preview.replace(/\{name\}/gi, contacts[0].name);
+  if (/\{name\}/i.test(preview)) {
+    const firstName = (contacts[0].name || "").trim().split(/\s+/)[0] || "";
+    if (firstName) {
+      preview = preview.replace(/\{name\}/gi, firstName);
+    } else {
+      preview = preview
+        .replace(/^[ \t]*(?:\*\{name\}\*|_\{name\}_|~\{name\}~|\{name\})(?:,[ \t]*|[ \t]*)/gim, "")
+        .replace(/[ \t]*(?:\*\{name\}\*|_\{name\}_|~\{name\}~|\{name\})/gi, "")
+        .replace(/,[ \t]*,/g, ",")
+        .replace(/,[ \t]*([!?.])/g, "$1")
+        .replace(/^[ \t]*,[ \t]*/gm, "");
+    }
+  }
 
   previewBox.style.display = "block";
-  previewBox.innerHTML = waMarkdown(preview);
+  previewBox.innerHTML =
+    currentMode === "whatsapp"
+      ? waMarkdown(preview)
+      : escapeHtml(preview).replace(/\n/g, "<br>");
 }
 
-// Botões de formatação — envolve o texto selecionado ou insere marcação
+// Botões de formatação
 window.fmt = function fmt(index, type) {
   const ta = document.getElementById("message-input");
   const start = ta.selectionStart;
@@ -184,18 +304,23 @@ window.fmt = function fmt(index, type) {
 // ─── Send button state ────────────────────────────────────────────────────────
 function updateSendBtn() {
   const variants = getVariants();
-  btnSend.disabled = !(
-    waStatus === "ready" &&
-    contacts.length &&
-    variants.length >= 1
-  );
+  const isReady =
+    currentMode === "whatsapp" ? waStatus === "ready" : smsStatus === "ready";
+
+  btnSend.disabled = !(isReady && contacts.length && variants.length >= 1);
 }
 
 // ─── Send ─────────────────────────────────────────────────────────────────────
 btnSend.addEventListener("click", async () => {
-  if (!confirm(`Enviar mensagem para ${contacts.length} contatos?`)) return;
+  if (
+    !confirm(
+      `Enviar mensagem via ${currentMode.toUpperCase()} para ${contacts.length} contatos?`,
+    )
+  )
+    return;
 
-  const res = await fetch("/api/send", {
+  const endpoint = currentMode === "whatsapp" ? "/api/send" : "/api/sms/send";
+  const res = await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -217,7 +342,8 @@ btnSend.addEventListener("click", async () => {
 });
 
 btnStop.addEventListener("click", async () => {
-  await fetch("/api/stop", { method: "POST" });
+  const endpoint = currentMode === "whatsapp" ? "/api/stop" : "/api/sms/stop";
+  await fetch(endpoint, { method: "POST" });
   btnStop.disabled = true;
 });
 
@@ -226,10 +352,12 @@ let logCount = 0;
 function startProgressPolling() {
   logCount = 0;
   const iv = setInterval(async () => {
-    const d = await fetch("/api/progress").then((r) => r.json());
+    const endpoint =
+      currentMode === "whatsapp" ? "/api/progress" : "/api/sms/progress";
+    const d = await fetch(endpoint).then((r) => r.json());
     if (!d.active) return;
 
-    const pct = Math.round(((d.sent + d.errors) / d.total) * 100);
+    const pct = Math.round(((d.sent + d.errors) / (d.total || 1)) * 100);
     document.getElementById("progress-fill").style.width = pct + "%";
     document.getElementById("p-total").textContent = d.total;
     document.getElementById("p-sent").textContent = d.sent;
@@ -243,8 +371,22 @@ function startProgressPolling() {
     const newRows = d.log.slice(logCount);
     newRows.forEach((row, i) => {
       const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${logCount + i + 1}</td><td>${row.name}</td><td>${row.number}</td>
-  <td>${row.status}</td><td style="color:#a0aec0;font-size:.78rem">${row.reason || ""}</td>`;
+      const cells = [
+        logCount + i + 1,
+        row.name || "—",
+        row.number,
+        row.status,
+        row.reason || "",
+      ];
+      cells.forEach((val, idx) => {
+        const td = document.createElement("td");
+        td.textContent = String(val);
+        if (idx === 4) {
+          td.style.color = "#a0aec0";
+          td.style.fontSize = ".78rem";
+        }
+        tr.appendChild(td);
+      });
       logBody.appendChild(tr);
     });
     logCount = d.log.length;
@@ -256,7 +398,7 @@ function startProgressPolling() {
     if (!d.running) {
       clearInterval(iv);
       btnStop.disabled = true;
-      btnSend.disabled = false;
+      updateSendBtn();
     }
   }, 1500);
 }
@@ -270,4 +412,7 @@ function fmtTime(s) {
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 fetchStatus();
-polling = setInterval(fetchStatus, 3000);
+polling = setInterval(() => {
+  if (currentMode === "whatsapp") fetchStatus();
+  else fetchSmsStatus();
+}, 3000);

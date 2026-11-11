@@ -3,19 +3,32 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>📣 WhatsApp Sender</title>
+    <title>📣 My Sender</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <header>
       <span>📣</span>
-      <h1>WhatsApp Sender</h1>
+      <h1>My Sender</h1>
     </header>
 
     <main>
+      <div class="tabs-container">
+        <button
+          id="tab-whatsapp"
+          class="tab-btn active"
+          onclick="switchMode('whatsapp')"
+        >
+          🟢 WhatsApp Web
+        </button>
+        <button id="tab-sms" class="tab-btn" onclick="switchMode('sms')">
+          📱 SMS (ADB)
+        </button>
+      </div>
+
       <!-- CONEXÃO -->
-      <div class="card">
-        <h2>📱 Conexão WhatsApp</h2>
+      <div class="card" id="connection-card">
+        <h2 id="connection-title">📱 Conexão WhatsApp</h2>
         <div id="status-bar" class="status-disconnected">⚪ Desconectado</div>
         <div id="qr-container" style="display: none">
           <img id="qr-img" src="" alt="QR Code" />
@@ -23,7 +36,11 @@
             Abra o WhatsApp → Menu → Aparelhos conectados → Conectar aparelho
           </p>
         </div>
-        <div class="row-actions" style="margin-top: 14px">
+        <div
+          class="row-actions"
+          style="margin-top: 14px"
+          id="connection-actions"
+        >
           <button class="btn btn-green" id="btn-connect">🔗 Conectar</button>
           <button class="btn btn-red" id="btn-disconnect" disabled>
             🔌 Desconectar
@@ -33,11 +50,11 @@
 
       <!-- DADOS -->
       <div class="card">
-        <h2>📂 Importar CSV</h2>
+        <h2>📂 Importar Contatos</h2>
         <label for="csv-file"
-          >Arquivo CSV (colunas: <code>name</code>, <code>number</code>)</label
+          >Arquivo CSV (<code>number</code> e <code>name</code> opcional) ou TXT (1 número por linha)</label
         >
-        <input type="file" id="csv-file" accept=".csv" />
+        <input type="file" id="csv-file" accept=".csv,.txt" />
         <div id="csv-info"></div>
       </div>
 
