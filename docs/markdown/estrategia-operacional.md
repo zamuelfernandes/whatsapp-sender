@@ -1,70 +1,42 @@
-# 📋 Estratégia Operacional de Envio — Eleições Clube Itajubense
+# 📋 Playbook Operacional de Envio em Lotes
 
-## Visão Geral
-
-Envio de **~2500 mensagens** (Spintax) divididas em **2 dias**, com **2 chips pré-pagos** operando em paralelo. Cada chip processa aproximadamente **625 contatos/dia**, fragmentados em **3 sessões** ao longo do dia.
+Modelo prático para organizar disparos cadenciados preservando a saúde da conta.
 
 ---
 
-## Estrutura dos Arquivos CSV
+## 1. Presets Recomendados (`.env`)
 
-O CSV mestre de cada dia (~1250 contatos) é dividido em 3 partes iguais:
-
-| Dia             | Sessão Manhã        | Sessão Tarde        | Sessão Noite        |
-| --------------- | ------------------- | ------------------- | ------------------- |
-| **Dia 1** (Qua) | `day1_1.csv` (~417) | `day1_2.csv` (~417) | `day1_3.csv` (~416) |
-| **Dia 2** (Qui) | `day2_1.csv` (~419) | `day2_2.csv` (~419) | `day2_3.csv` (~419) |
-
-> **Nota:** Como cada dia usa 2 chips em paralelo, cada chip processa apenas **~208 contatos por sessão**.
+| Perfil da Conta | `DELAY_MIN` / `MAX` | `BLOCK_SIZE` | `BLOCK_PAUSE` | Observação |
+| :--- | :--- | :--- | :--- | :--- |
+| **Conta antiga / pessoal** | `25` / `55` | `10`–`20` | `180`–`300` | Dividir em blocos ao longo do dia |
+| **Conta nova (Warmup)** | `40` / `80` | `10` | `420` | Ativar `WARMUP_MODE=true` e `WARMUP_DAILY_LIMIT=25` |
 
 ---
 
-## Cronograma de Execução (Por Chip)
+## 2. Distribuição Sugerida em Sessões
 
-Configuração `.env` utilizada:
+Para listas de contatos sem vínculo prévio na agenda, divida em sessões espaçadas em horário comercial/social (ex.: entre 09h e 20h):
 
-```
-DELAY_MIN=20 | DELAY_MAX=45 | BLOCK_SIZE=40 | BLOCK_PAUSE=180
-```
-
-**Tempo estimado por sessão (~208 contatos/chip):** ~2 horas e 8 minutos.
-
-| Sessão       | Horário        | Ação entre sessões                        |
-| ------------ | -------------- | ----------------------------------------- |
-| 🌅 **Manhã** | 09:00 → ~11:08 | Usar o celular normalmente por ~50 min    |
-| ☀️ **Tarde** | 14:00 → ~16:08 | Responder mensagens recebidas por ~50 min |
-| 🌙 **Noite** | 19:00 → ~21:08 | Encerrar o dia                            |
+| Sessão | Janela | Ação entre sessões |
+| :--- | :--- | :--- |
+| **Bloco 1** | Manhã | Aguardar ~1h30–2h e responder mensagens recebidas |
+| **Bloco 2** | Início da tarde | Conferir erros em `logs/` e responder interações |
+| **Bloco 3** | Fim da tarde / noite | Revisar relatório final em `logs/` |
 
 ---
 
-## Checklist Operacional
+## 3. Checklist Operacional
 
 ### Antes de Iniciar
-
-- [ ] Desativar suspensão/modo dormir do computador
-- [ ] Verificar conexão estável com a internet
-- [ ] Conectar ambos os chips via QR Code (portas 3000 e 3001)
-- [ ] Confirmar que o `.env` está com os parâmetros seguros
+- [ ] Desativar suspensão automática do computador (bloquear a tela é permitido, suspender não)
+- [ ] Garantir conexão de internet estável
+- [ ] Validar o formato do arquivo de contatos (ver [modelo-contatos.csv](../modelo-contatos.csv))
+- [ ] Fazer **1 envio de teste** para um número próprio antes do lote real
 
 ### Durante o Envio
+- [ ] Não fechar o terminal onde `npm start` está rodando
+- [ ] Responder manualmente quem interagir no celular para fortalecer o histórico bidirecional
 
-- [ ] Manter o WhatsApp Web/App aberto no celular
-- [ ] Responder manualmente quem interagir (aumenta Trust Score)
-- [ ] Entre as sessões, usar o chip normalmente (mandar msgs, abrir grupos)
-
-### Após Cada Sessão
-
-- [ ] Verificar o log de erros na Dashboard
-- [ ] Confirmar contagem de enviados vs total
-- [ ] Aguardar o intervalo antes da próxima sessão
-
----
-
-## Riscos e Mitigações
-
-| Risco             | Mitigação                                                       |
-| ----------------- | --------------------------------------------------------------- |
-| Banimento de chip | 2 chips dividem a carga; número oficial preservado              |
-| Denúncias de spam | Spintax gera mensagens únicas; texto institucional legítimo     |
-| Queda de conexão  | Sessão do WhatsApp persiste em `.wwebjs_auth`; basta reconectar |
-| PC suspender      | Desativar modo dormir antes de iniciar                          |
+### Após Cada Bloco
+- [ ] Conferir o CSV gerado automaticamente na pasta `logs/` (`OK` vs `ERRO`)
+- [ ] A sessão permanece salva em `.wwebjs_auth` para o próximo bloco sem novo QR Code

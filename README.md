@@ -1,82 +1,73 @@
-# 📣 WhatsApp Sender (Mass Messaging Edition)
+# 📣 WhatsApp Sender
 
-WhatsApp Sender é uma aplicação Node.js desenvolvida para automação técnica e humanizada de envio de mensagens em massa via WhatsApp. O sistema opera simulando os movimentos e pausas de um humano, com atrasos configuráveis e uso de **Spintax** para variar totalmente o conteúdo da mensagem por destinatário, minimizando os banimentos de número impostos pelo rigoroso filtro Anti-Spam da Meta.
+Aplicação Node.js para envio cadenciado de mensagens pelo **WhatsApp Web** (via `Puppeteer`) e por **SMS** nativo (via `ADB`), com painel web em tempo real, suporte a **Spintax**, controle de blocos anti-bloqueio e registro de logs em CSV.
 
 ---
 
-## 🚀 Principais Features
+## 🚀 Principais Recursos
 
-- **Interface Baseada na Web (Dashboard)** para conexão via QRCode gerado no navegador (dispensa o uso do WhatsApp Desktop)
-- **Engine Antibloqueio**: Controle avançado de pacotes de envio (`Delays dinâmicos` + `Pausas estendidas por blocos` + `Limitador diário e aquecimento de número`).
-- **Log Tempo Real**: Visualização limpa da lista de transações com ETAs e andamento.
-- **Suporte a Arquivos CSV**
-- **Suporte Avançado Spintax**: Transforme 1 mesma mensagem em dezenas de variações `{Opa|Oi|Saudações}`.
-- **Marcações Válidas**: Suporta negrito, itálico, taxado, emojis e injeção do nome do destinatário (ex: `Olá {name}!`).
+- **Automação direta no navegador (`Puppeteer`):** controla o `web.whatsapp.com` sem depender de APIs não oficiais baseadas em módulos internos do webpack, exibindo o QR Code diretamente no painel e mantendo a sessão salva em `.wwebjs_auth`.
+- **Engine Anti-Bloqueio:** delays aleatórios (`DELAY_MIN`/`DELAY_MAX`), pausas longas por bloco (`BLOCK_SIZE`/`BLOCK_PAUSE`) e modo aquecimento (`WARMUP_MODE`).
+- **Importação flexível (`.csv` ou `.txt`):** aceita CSV com `name` e `number`, CSV apenas com `number` (ou `telefone`/`celular`/`numero`) ou `.txt` simples com um número por linha, com limpeza e deduplicação automática.
+- **Spintax e Formatação:** variações `{Opção 1|Opção 2}`, variável opcional `{name}` (removida automaticamente quando o contato não tiver nome), negrito `*`, itálico `_`, riscado `~` e pré-visualização ao vivo.
+- **Canal Duplo (WhatsApp + SMS ADB):** abas separadas no dashboard com configurações independentes em `.env` e `.env.sms`.
+- **Logs persistentes:** cada execução grava automaticamente um CSV detalhado (`OK`/`ERRO` e motivo) na pasta `logs/`.
 
 ---
 
 ## 🛠 Pré-requisitos
 
-Para o rodar e editar o código deste projeto na sua máquina, você precisa de:
-
-- [Git](https://git-scm.com/) (Para clonar o projeto).
-- [Node.js](https://nodejs.org/en) na versão LTS (`v18.x` ou superior recomendado). O Node já inclui o gerenciador de pacotes `npm`.
-- Recomendamos o uso de um editor de código com suporte completo a javascript (ex: VSCode).
+- [Node.js](https://nodejs.org/) (`v18+` recomendado)
+- `adb` instalado no sistema *(apenas se for usar a aba de SMS via Android)*
 
 ---
 
-## 💻 Como Clonar e Rodar
+## 💻 Instalação e Configuração
 
-Abra o Terminal (ou Prompt de Comando, PowerShell) da sua máquina e siga os passos abaixo:
-
-### 1. Clonar o Repositório
-
-```bash
-git clone https://github.com/SEU_USUARIO/whatsapp-sender.git
-cd whatsapp-sender
-```
-
-### 2. Instalar as Dependências
-
-O sistema usa o pacote _Puppeteer_ pelo `whatsapp-web.js`, portanto esse comando pode demorar alguns minutos para baixar a versão oculta do Chromium.
+### 1. Instalar dependências
 
 ```bash
 npm install
 ```
 
-### 3. Configurar Variáveis de Ambiente
+### 2. Configurar variáveis de ambiente
 
-Você **precisa** criar um arquivo secreto na raiz do seu projeto chamado de `.env`. O comando abaixo copia a versão de exemplo segura para você editar.
+Copie os arquivos de exemplo e ajuste conforme sua necessidade:
 
 ```bash
 cp .env.example .env
+cp .env.sms.example .env.sms   # Opcional: apenas se for enviar SMS via ADB
 ```
 
-_(Edite o `.env` se julgar necessário alterar a agressividade/segurança dos envios)_
+Principais opções do `.env`:
+- `DELAY_MIN` / `DELAY_MAX`: intervalo aleatório em segundos entre envios;
+- `BLOCK_SIZE` / `BLOCK_PAUSE`: quantidade de mensagens por bloco e pausa em segundos entre blocos;
+- `WARMUP_MODE` / `WARMUP_DAILY_LIMIT`: limita e desacelera envios para contas novas;
+- `PORT`: porta inicial do servidor (padrão `3000`; se estiver em uso, avança automaticamente para a próxima livre);
+- `WA_HEADLESS`: `true` roda o Chrome em segundo plano; `false` exibe a janela do navegador.
 
-### 4. Executar o Servidor
+### 3. Iniciar o servidor
 
 ```bash
 npm start
 ```
 
-### 5. Acessar o Dashboard
-
-O seu servidor abrirá a porta local para controle da aplicação. Acesse pelo navegador:
-
-```
-http://localhost:3000
-```
+Acesse a URL exibida no terminal (por padrão `http://localhost:3000`).
 
 ---
 
-## 💡 Como Usar na Interface
+## 💡 Como Usar
 
-1. **Conexão**: Clique em "Conectar" na Dashboard. Um QRCode surgirá em alguns segundos. Leia-o usando o celular (Aparelhos Conectados > Conectar Dispositivo).
-2. **Base de Contatos**: Importe o seu `.csv`.
-   - **Importante**: A primeira linha do arquivo **DEVE OBRIGATORIAMENTE** ser o cabeçalho: `name,number`
-   - Números brasileiros devem possuir código do país e DDD limpos (ex: `553599999999`).
-3. **Escrita**: Redija o corpo no formato Spintax aproveitando ao máximo as variações, por exemplo `{Estou passando|Passei aqui} para avisar o evento sexta, tudo bem {name}?`.
-4. **Envio**: Revise a Pré-Visualização e inicie o Envio. Recomenda-se desabilitar o descanso de tela da máquina (Standby) até que o medidor bata **100%**.
+1. **Conexão:** aguarde o QR Code no painel e escaneie pelo celular em *WhatsApp → Aparelhos conectados → Conectar aparelho*. Após o primeiro login, a sessão permanece salva em `.wwebjs_auth`.
+2. **Contatos:** importe um `.csv` ou `.txt` seguindo o padrão de [docs/modelo-contatos.csv](docs/modelo-contatos.csv) (`number` obrigatório, `name` opcional, DDI + DDD sem símbolos).
+3. **Mensagem:** redija o texto usando Spintax (veja exemplo em [docs/modelo-mensagem.txt](docs/modelo-mensagem.txt)) e confira a **Pré-visualização Aleatória**.
+4. **Envio:** clique em **▶ Iniciar Envio**, acompanhe progresso/ETA e consulte o histórico gerado em `logs/`.
 
-_Obs: Qualquer alteração no número requer um novo login QR. Uma vez logado, a sessão continuará viva nos próximos boots do comando npm start._
+---
+
+## 📚 Documentação Complementar
+
+- [Estratégias de Envio em Massa](docs/markdown/estrategias-envio-em-massa.md)
+- [Playbook Operacional](docs/markdown/estrategia-operacional.md)
+- [Gerador de Spintax com IA](docs/markdown/prompt-gerador-spintax.md)
+- [WhatsApp Cloud API vs Automação Web](docs/markdown/whatsapp-cloud-api-custos.md)

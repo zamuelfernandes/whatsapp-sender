@@ -1,23 +1,21 @@
-# Gerador de Spintax assistido por IA
+# Gerador de Spintax Assistido por IA
 
-Se você precisa criar uma mensagem com Spintax para o WhatsApp Sender, mas não quer ter o trabalho de pensar em todos os sinônimos manualmente, você pode pedir a ajuda de uma Inteligência Artificial (como o próprio ChatGPT, Gemini, ou Claude).
-
-Copie o prompt abaixo e cole no seu modelo de IA favorito, colando a sua mensagem original no final.
+Use o prompt abaixo em qualquer modelo de IA para converter uma mensagem comum em formato **Spintax** compatível com o WhatsApp Sender.
 
 ---
 
-### Copie este Prompt:
+## Prompt para Copiar
 
 ```text
-Você é um especialista em Copywriting e em contorno de filtros Anti-Spam do WhatsApp.
-Sua tarefa é pegar a MENSAGEM ORIGINAL abaixo e reescrevê-la utilizando a técnica de "Spintax".
+Você é um especialista em copywriting para WhatsApp e prevenção contra filtros anti-spam.
+Reescreva a MENSAGEM ORIGINAL abaixo utilizando a sintaxe de Spintax.
 
-Regras do Spintax:
-1. O Spintax usa o formato {Opção1|Opção2|Opção3}.
-2. Onde houver o nome da pessoa na minha mensagem original, mantenha EXATAMENTE a tag {name} fora de qualquer variação. (ex: {Olá|Oi|Bom dia}, *{name}*!).
-3. Crie o máximo de variações orgânicas possíveis para saudações, sinônimos ao longo do texto e despedidas.
-4. Mantenha o sentido, o tom de voz e a formatação (negrito com asteriscos *, itálico com _, etc).
-5. Me devolva APENAS o bloco de texto final em formato Spintax, sem explicações adicionais, pronto para eu copiar e colar no meu software.
+Regras obrigatórias:
+1. Use o formato {Opção 1|Opção 2|Opção 3} sem chaves aninhadas (nunca coloque {} dentro de outro {}).
+2. Se houver nome de contato, mantenha a tag {name} exatamente assim (ou remova se o envio não usar nomes).
+3. Crie variações naturais para saudações, verbos, conectivos e despedida.
+4. Preserve o sentido, o tom amigável e a formatação do WhatsApp (*negrito*, _itálico_, ~riscado~).
+5. Devolva apenas o texto final pronto para colar, sem explicações extras.
 
 MENSAGEM ORIGINAL:
 [COLE SUA MENSAGEM AQUI]
@@ -25,12 +23,10 @@ MENSAGEM ORIGINAL:
 
 ---
 
-### Exemplo Prático:
+## Exemplo Prático
 
-Se a sua mensagem original for:
+**Mensagem original:**
+> _Aviso importante!_ Informamos que o horário do evento de sábado foi atualizado para as 9h. Acesse o link para conferir os detalhes.
 
-> _Atenção Associado!_ O Clube Itajubense informa que a piscina estará fechada para manutenção nesta sexta-feira. Agradecemos a compreensão.
-
-A IA devolverá algo como:
-
-> {_Atenção Associado!_|_Aviso Importante, {name}!_|_Olá {name}, um recado rápido do Clube!_} {O Clube Itajubense|A diretoria|Nossa equipe} {informa que|comunica que|passando para avisar que} a piscina {estará fechada|vai estar interditada} para {manutenção|limpeza} {nesta sexta-feira|nesta próxima sexta}. {Agradecemos a compreensão|Contamos com sua colaboração|Obrigado por entender}.
+**Saída com Spintax:**
+> {_Aviso importante!_|_Olá! Um recado rápido:_} {Informamos|Passando para avisar} que o horário do evento de sábado {foi atualizado para|passou para} as *9h*. {Acesse|Confira} o link para ver os detalhes.

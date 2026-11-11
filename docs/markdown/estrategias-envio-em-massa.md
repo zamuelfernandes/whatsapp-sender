@@ -1,61 +1,41 @@
 # Estratégias para Envio em Massa (WhatsApp)
 
-Esta documentação descreve as abordagens recomendadas para realizar disparos em massa (ex: 2500 mensagens divididas em múltiplos dias) utilizando o sistema atual baseado em `whatsapp-web.js`, minimizando os riscos de banimento da conta.
-
-## O Cenário Atual
-
-O objetivo é enviar aproximadamente **1250 mensagens por dia** durante janelas de disparo (ex: 2500 mensagens entre Quarta/Quinta e mais 2500 entre Sexta/Sábado).
-Este é um volume considerado alto e de grande risco para linhas não oficiais.
-
-Abaixo estão as abordagens recomendadas, da mais segura para a mais arriscada:
-
-### 1. A Abordagem Perfeita: Múltiplas Contas (Escalonamento Horizontal)
-
-A forma mais segura de operar com automação não oficial (`whatsapp-web.js`).
-
-- **Conceito:** Não concentrar todos os envios em um único número. Se um número sofrer bloqueio, a comunicação principal não é perdida.
-- **Recomendação:** Utilizar 2 ou 3 chips (números) secundários exclusivamente para o disparo ativo (outbound). O número oficial deve ser mantido para atendimento receptivo (inbound).
-- **Como executar:**
-  - Clonar a pasta do projeto para rodar múltiplas instâncias (ex: portas 3000, 3001, 3002).
-  - Conectar cada instância a um QR Code (número) diferente.
-  - Dividir o CSV mestre em partes menores (ex: 2500 contatos ÷ 3 chips = ~833 contatos por chip).
-  - **Vantagem:** A carga diária por número cai drasticamente (ex: ~415 envios/dia por chip em uma janela de 2 dias), um volume considerado muito mais natural pelo algoritmo Anti-Spam do WhatsApp.
-
-### 2. A Abordagem Profissional e Definitiva: WhatsApp API Oficial (Cloud API)
-
-A única solução 100% livre de riscos de banimento para grandes volumes.
-
-- **Conceito:** Utilizar a API oficial da Meta (através de provedores como Zenvia, Twilio, ou integração direta com a Cloud API).
-- **Como funciona:** Exige a aprovação de _Templates_ de mensagens pré-cadastrados. A Meta cobra um valor (frações de centavos) por cada conversa iniciada pela empresa.
-- **Vantagem:** Sem risco de banimento de número, desde que as políticas da Meta sejam respeitadas (comunicação legítima com usuários que optaram por receber mensagens - _opt-in_). Relatórios precisos de entrega e leitura.
-- **Custos Aproximados (Referência: 2024/2025 no Brasil):**
-  - **Conversas de Marketing** (Avisos gerais, promoções, convites): ~**US$ 0,0625** por conversa (aprox. **R$ 0,31**).
-  - **Conversas de Utilidade** (Atualizações sobre finanças/pedidos, pós-venda): ~**US$ 0,0350** por conversa (aprox. **R$ 0,17**).
-  - **Simulação para o seu Cenário (2.500 mensagens de Marketing):**
-    - 2.500 x US$ 0,0625 = **US$ 156,25**
-    - Convertendo (Dólar a R$ 5,00): **R$ 781,25** no total pelo disparo completo.
-
-### 3. A Abordagem Kamikaze: Usando 1 Único Número
-
-Caso seja estritamente necessário utilizar apenas um número não-oficial para o disparo dos 1250 envios diários. Requer operação contínua e extremo cuidado.
-
-- **Conceito:** Espremer o máximo de envios distribuídos ao longo do máximo de horas possíveis no dia (ex: 10 a 14 horas de operação contínua).
-- **Parâmetros recomendados (`.env`):**
-  ```env
-  DELAY_MIN=20
-  DELAY_MAX=45
-  BLOCK_SIZE=40
-  BLOCK_PAUSE=180
-  ```
-- **Matemática de Risco (1250 Envios/Dia):**
-  - Média de delay: ~32.5s -> Totalizando ~11,3 horas intermitentes de envios.
-  - Pausas de bloco: 3 minutos a cada 40 envios -> Aproximadamente 31 pausas, totalizando ~1,5 horas paradas.
-  - **Operação:** O sistema precisa rodar ativamente (ex: das 08h às 21h) para finalizar a cota diária sem chamar tanta atenção por "velocidade excessiva".
+Este guia resume as boas práticas para realizar disparos em lotes utilizando automação via navegador (`Puppeteer` no WhatsApp Web) e quando considerar a API oficial da Meta.
 
 ---
 
-## Dicas Ouro Anti-Banimento (Validas para qualquer abordagem não-oficial)
+## Comparativo de Abordagens
 
-1. **Particionamento de Dados:** Nunca suba o CSV de 2500 linhas de uma vez. Crie arquivos menores referenciando lotes diários (ex: `lote_quarta.csv`, `lote_quinta.csv`).
-2. **Alta Variância de Texto (Spintax):** Modificar rigorosamente o texto. Enviar a mesma `String` exata centenas de vezes é o gatilho principal para detecção por IA de provedores. Utilize _Spintax_ para gerar variações na saudação, corpo e despedida do texto.
-3. **Equilíbrio Receptivo (Inbound):** O algoritmo do WhatsApp avalia a proporção de mensagens enviadas _vs_ recebidas. Durante os disparos, mantenha o WhatsApp Web/App aberto e responda manualmente às pessoas que interagirem com o robô. Uma alta taxa de resposta orgânica aumenta exponencialmente a "saúde" ("Trust Score") do número afetado.
+### 1. Escalonamento Horizontal (Múltiplas Contas Secundárias)
+A abordagem mais segura ao utilizar automação via WhatsApp Web para volumes médios ou altos:
+
+- **Conceito:** não concentrar todos os envios no número principal/oficial de atendimento.
+- **Execução:** dividir a lista em arquivos menores e rodar instâncias separadas (em pastas/portas diferentes, configurando `PORT` no `.env`), cada uma conectada a uma conta distinta.
+- **Vantagem:** reduz o volume diário por conta e preserva o número principal contra restrições.
+
+### 2. Uso de API Oficial (WhatsApp Business Cloud API)
+Indicada para operações recorrentes, alto volume e atendimento corporativo:
+
+- **Como funciona:** utiliza *Templates* pré-aprovados no Meta Business Manager, com cobrança por conversa iniciada pela empresa (categorias *Marketing* ou *Utilidade*).
+- **Vantagem:** zero risco de banimento por automação de interface, desde que respeitadas as políticas de *opt-in* e qualidade da Meta.
+
+### 3. Conta Única (Lotes Pequenos e Cadência Conservadora)
+Para listas menores ou envios pontuais usando uma única conta já aquecida:
+
+- **Parâmetros recomendados no `.env`:**
+  ```env
+  DELAY_MIN=25
+  DELAY_MAX=55
+  BLOCK_SIZE=10
+  BLOCK_PAUSE=180
+  ```
+- **Intervalos entre lotes:** divida o arquivo principal em blocos menores (ex.: 15 a 30 contatos) espaçados por 1 a 2 horas ao longo do dia.
+
+---
+
+## Regras de Ouro Anti-Bloqueio
+
+1. **Particionamento de dados:** evite subir listas extensas em um único disparo contínuo.
+2. **Variação real de texto (Spintax):** enviar exatamente a mesma mensagem em sequência ativa filtros anti-spam. Varie saudações, conectores e encerramento com `{opção1|opção2}`.
+3. **Links para não-contatos:** destinatários sem o seu número salvo podem visualizar links como não clicáveis até interagirem. Incentivar uma resposta simples (ex.: *"responda um 'oi' para liberar o link"*) melhora a taxa de conversão e eleva o *Trust Score* da conta.
+4. **Equilíbrio receptivo (Inbound):** responda manualmente quem interagir entre um bloco e outro para manter histórico bidirecional legítimo.

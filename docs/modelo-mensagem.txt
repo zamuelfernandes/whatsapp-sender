@@ -1,0 +1,11 @@
+{Olá|Oi|Tudo bem}, *{name}*? {Passando para compartilhar|Estamos entrando em contato para enviar} um aviso sobre *[NOME DO EVENTO / ASSUNTO]*.
+
+📅 {Data|Quando}: *[DIA/MÊS, às HORÁRIO]*
+📍 {Local|Onde}: *[ENDEREÇO OU LINK]*
+
+{Acesse mais informações|Entre no grupo oficial} pelo link abaixo:
+https://exemplo.com/seu-link
+
+_(Se o link não aparecer clicável por ainda não nos termos nos contatos, {basta responder um "oi" aqui que ele libera|responda um "oi" por aqui para liberar o clique}!)_
+
+{Qualquer dúvida, estamos à disposição por aqui|Se precisar de ajuda, é só responder esta mensagem}!
